@@ -1,0 +1,5 @@
+# Day 1 needs only the standard library. Later days add:
+# fastapi
+# uvicorn[standard]
+# openai
+# python-dotenv
