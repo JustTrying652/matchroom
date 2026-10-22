@@ -1,6 +1,6 @@
 """Generate a synthetic match, save it as JSON and print a quick sanity summary.
 
-Usage:  python scripts/generate_match.py --seed 7
+Usage:  python scripts/generate_match.py --seed 65
 """
 import argparse
 import json
@@ -16,7 +16,7 @@ from matchroom.synthetic.generator import MatchGenerator  # noqa: E402
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--seed", type=int, default=65)
     ap.add_argument("--out", default=None, help="output file (default data/synthetic/match_<seed>.json)")
     args = ap.parse_args()
 
