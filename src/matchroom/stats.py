@@ -124,7 +124,7 @@ class MatchState:
         turnovers_per_min = len(self._turnovers) / (CHAOS_WINDOW / 60)
         passes_per_min = len(self._passes) / (CHAOS_WINDOW / 60)
         chaos = min(1.0, turnovers_per_min / 4.0)
-        label = "controlled" if chaos < 0.45 else "balanced" if chaos < 0.7 else "chaotic"
+        label = "controlled" if chaos < 0.55 else "balanced" if chaos < 0.8 else "chaotic"
         tempo = "high tempo" if passes_per_min > 14 else "steady" if passes_per_min > 9 else "slow build-up"
         return {"chaos_index": round(chaos, 2), "label": label,
                 "turnovers_per_min": round(turnovers_per_min, 1),
