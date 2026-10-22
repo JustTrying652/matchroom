@@ -221,7 +221,10 @@ class MatchGenerator:
         r = self.rng
         atk = self.teams[atk_i]
         x, y = self.ball
-        shooter = self._pick(atk_i, x, forwards=True)
+        if self.carrier and self.carrier.position != "GK" and r.random() < 0.7:
+            shooter = self.carrier          # usually the man who just received the ball
+        else:
+            shooter = self._pick(atk_i, x, forwards=True)
         dist = math.hypot(105 - x, 34 - y)
         xg = _clamp(0.015 + 0.55 * math.exp(-dist / 11) * (1 - 0.5 * pressure), 0.01, 0.76)
         p_goal = min(0.9, xg * (0.65 + 0.70 * atk.finishing))
