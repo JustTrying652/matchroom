@@ -1,5 +1,4 @@
-# Day 1 needs only the standard library. Later days add:
-# fastapi
-# uvicorn[standard]
-# openai
-# python-dotenv
+fastapi
+uvicorn[standard]
+# Needed once you switch from the offline mock model to Azure OpenAI / Foundry:
+openai
