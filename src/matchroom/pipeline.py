@@ -41,12 +41,18 @@ class MatchDesk:
         self._safe = MockLLM()   # deterministic fallback if the model keeps failing verification
 
     # ------------------------------------------------------------- live feed
-    def process_event(self, e: dict, persona: Persona) -> list[dict]:
+    def process_event(self, e: dict, persona: Persona, cache: dict | None = None) -> list[dict]:
         cards = []
         for moment in self.detector.feed(e):
             m = moment.to_dict()
-            if self.personalizer.wants(m, persona):
-                cards.append(self._card(m, persona))
+            if not self.personalizer.wants(m, persona):
+                continue
+            card = cache.get(m["id"]) if cache is not None else None
+            if card is None:
+                card = self._card(m, persona)
+                if cache is not None:
+                    cache[m["id"]] = card
+            cards.append(card)
         return cards
 
     def run(self, persona: Persona) -> dict:
