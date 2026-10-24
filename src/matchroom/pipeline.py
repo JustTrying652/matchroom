@@ -96,6 +96,18 @@ class MatchDesk:
                             "accent": self.colors.get(m["team"], "#888888"),
                             "priority": m["importance"], "evidence": m["evidence"]}}
 
+
+    def recap(self, persona: Persona, cache: dict | None = None) -> dict:
+        if cache is not None and "__recap__" in cache:
+            return cache["__recap__"]
+        result = self._recap(persona)
+        if cache is not None:
+            cache["__recap__"] = result
+        return result
+
+
+
+
     def recap(self, persona: Persona) -> dict:
         s = self.detector.state.snapshot()
         h, a = self.home, self.away
