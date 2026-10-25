@@ -34,6 +34,7 @@ class MatchDesk:
         self.names = {t["code"]: t["name"] for t in teams}
         self.colors = {t["code"]: t["color"] for t in teams}
         roster = {p["name"] for t in teams for p in t["players"]}
+        self.inject_faults = inject_faults
         self.llm = llm or get_llm()
         self.max_attempts = max_attempts
         self.detector = MomentDetector(self.home, self.away, self.names)
