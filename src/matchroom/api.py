@@ -63,12 +63,16 @@ async def stream(persona: str = "casual_en", fav: str = "", player: str = "",
         raise HTTPException(400, "unknown persona")
     base = PERSONAS[persona]
     p = Persona(base.id, base.language, base.depth, fav or None, player or None)
-    llm = get_llm(faults)
-    desk = MatchDesk(MATCH, llm)
-    key = f"{SEED}_{p.id}_{_slug(fav)}_{_slug(player)}_{llm.name}{'_faults' if faults else ''}"
-    path = CACHE_DIR / f"{key}.json"
-    fresh = not path.exists()
-    cache: dict = {} if fresh else json.loads(path.read_text(encoding="utf-8"))
+    llm = get_llm()
+    desk = MatchDesk(MATCH, llm, inject_faults=faults)
+    base = f"{SEED}_{p.id}_{_slug(fav)}_{_slug(player)}"
+    suffix = "_faults" if faults else ""
+    # Prefer a cached feed from a real model, so a deployment without any API key still replays it.
+    found = next((f for n in (llm.name, "azure-openai", "github-models")
+                  if (f := CACHE_DIR / f"{base}_{n}{suffix}.json").exists()), None)
+    path = found or CACHE_DIR / f"{base}_{llm.name}{suffix}.json"
+    fresh = found is None
+    cache: dict = {} if fresh else json.loads(found.read_text(encoding="utf-8"))
 
     async def gen():
         prev_t, last_snap = 0.0, -99.0
