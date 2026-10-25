@@ -67,8 +67,7 @@ async def stream(persona: str = "casual_en", fav: str = "", player: str = "",
     desk = MatchDesk(MATCH, llm, inject_faults=faults)
     base = f"{SEED}_{p.id}_{_slug(fav)}_{_slug(player)}"
     suffix = "_faults" if faults else ""
-    # Prefer a cached feed from a real model, so a deployment without any API key still replays it.
-    found = next((f for n in (llm.name, "azure-openai", "github-models")
+    found = next((f for n in (llm.name, "azure-openai", "groq")
                   if (f := CACHE_DIR / f"{base}_{n}{suffix}.json").exists()), None)
     path = found or CACHE_DIR / f"{base}_{llm.name}{suffix}.json"
     fresh = found is None
