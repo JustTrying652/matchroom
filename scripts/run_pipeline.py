@@ -35,8 +35,8 @@ def main() -> None:
     base = PERSONAS[args.persona]
     persona = Persona(base.id, base.language, base.depth, args.fav, args.player)
 
-    llm = get_llm(inject_faults=args.faults)
-    desk = MatchDesk(match, llm)
+    llm = get_llm()
+    desk = MatchDesk(match, llm, inject_faults=args.faults)
     feed = desk.run(persona)
 
     print(f"Model: {llm.name} | persona: {persona.id} | cards: {len(feed['cards'])}\n")
