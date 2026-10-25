@@ -210,15 +210,15 @@ class AzureOpenAILLM:
         return r.choices[0].message.content
 
 
-class GitHubModelsLLM:
-    """GitHub Models (free, OpenAI-compatible). A stop-gap while Azure/Foundry access is being set up."""
-    name = "github-models"
+class GroqLLM:
+    """Groq (free tier, OpenAI-compatible endpoint). Not a Microsoft service."""
+    name = "groq"
 
     def __init__(self):
         from openai import OpenAI
-        self.client = OpenAI(base_url="https://models.github.ai/inference",
-                             api_key=os.environ["GITHUB_MODELS_TOKEN"])
-        self.model = os.environ.get("GITHUB_MODEL", "openai/gpt-4.1-mini")
+        self.client = OpenAI(base_url="https://api.groq.com/openai/v1",
+                             api_key=os.environ["GROQ_API_KEY"])
+        self.model = os.environ["GROQ_MODEL"]
 
     def complete(self, system: str, user: str, json_mode: bool = True, temperature: float = 0.4) -> str:
         msgs = [{"role": "system", "content": system}, {"role": "user", "content": user}]
@@ -229,7 +229,7 @@ class GitHubModelsLLM:
             try:
                 r = self.client.chat.completions.create(model=self.model, messages=msgs, **extra)
                 if isinstance(r, str):   # the endpoint answered with plain text, not JSON
-                    raise RuntimeError("GitHub Models returned non-JSON text: " + r[:200])
+                    raise RuntimeError("Groq returned non-JSON text: " + r[:200])
                 return r.choices[0].message.content
             except Exception as exc:   # option not supported by this model: try a plainer request
                 last = exc
@@ -240,6 +240,6 @@ def get_llm(inject_faults: bool = False):
     needed = ("AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_API_KEY", "AZURE_OPENAI_DEPLOYMENT")
     if all(os.environ.get(k) for k in needed):
         return AzureOpenAILLM()
-    if os.environ.get("GITHUB_MODELS_TOKEN"):
-        return GitHubModelsLLM()
+    if os.environ.get("GROQ_API_KEY") and os.environ.get("GROQ_MODEL"):
+        return GroqLLM()
     return MockLLM(inject_faults)
