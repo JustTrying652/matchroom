@@ -27,7 +27,7 @@ TITLE = {
 
 
 class MatchDesk:
-    def __init__(self, match: dict, llm=None, max_attempts: int = 3):
+    def __init__(self, match: dict, llm=None, max_attempts: int = 3, inject_faults: bool = False):
         self.match = match
         teams = match["teams"]
         self.home, self.away = teams[0]["code"], teams[1]["code"]
