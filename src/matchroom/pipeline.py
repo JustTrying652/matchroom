@@ -9,6 +9,10 @@ from .agents import (Analyst, Narrator, Persona, Personalizer, RecapWriter, Veri
 from .llm import MockLLM, get_llm
 from .moments import MomentDetector
 
+def _tamper(draft: dict) -> dict:
+    """Demo mode: simulate a model hallucination by adding an invented statistic."""
+    return {**draft, "text": draft.get("text", "") + " It was his 97th goal of the season."}
+
 LAYER = {"goal": "goal_banner", "big_chance": "lower_third", "card": "lower_third",
          "sprint": "player_tag", "momentum_swing": "stat_card", "chaos_phase": "stat_card",
          "control_phase": "stat_card", "half_time": "scoreboard", "full_time": "scoreboard"}
