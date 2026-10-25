@@ -86,9 +86,13 @@ class MatchDesk:
         analysis = self.analyst.analyze(m, self.detector)
         facts = {**m["facts"], **analysis}
         safe = Narrator(self._safe)
-        draft, verification = self._loop(
-            lambda a, fb: self.narrator.write(m, analysis, persona, a, fb),
-            lambda: safe.write(m, analysis, persona, 1, []), facts)
+        def write(a, fb):
+            draft = self.narrator.write(m, analysis, persona, a, fb)
+            if self.inject_faults and m["type"] == "goal" and a == 0:
+                draft = _tamper(draft)
+            return draft
+
+        draft, verification = self._loop(write, lambda: safe.write(m, analysis, persona, 1, []), facts)
         dur = 12 if m["type"] == "goal" else 8
         return {"moment_id": m["id"], "type": m["type"], "clock": m["clock"], "t": m["t"],
                 "importance": m["importance"], "team": m["team"], "text": draft.get("text", ""),
