@@ -4,10 +4,15 @@ Ingest -> Interpret (stats) -> Explain (moments + Analyst) -> Write (Narrator <-
 -> Render (overlay cards) -> Personalize (per-fan persona).
 """
 from __future__ import annotations
+import logging
+import time
+
 
 from .agents import (Analyst, Narrator, Persona, Personalizer, RecapWriter, Verifier)
 from .llm import MockLLM, get_llm
 from .moments import MomentDetector
+
+log = logging.getLogger("matchrom")
 
 def _tamper(draft: dict) -> dict:
     """Demo mode: simulate a model hallucination by adding an invented statistic."""
@@ -70,8 +75,13 @@ class MatchDesk:
     def _loop(self, write, fallback, facts):
         rejections, feedback = [], []
         for attempt in range(self.max_attempts):
-            draft = write(attempt, feedback)
-            issues = self.verifier.check(draft, facts)
+            try:
+                draft = write(attempt, feedback)
+                issues = self.verifier.check(draft, facts)
+            except Exception as exc:   # rate limit, network, bad key...
+                log.warning("model call failed (%s): %s", type(exc).__name__, exc)
+                draft, issues = {}, [f"model call failed: {type(exc).__name__}"]
+                time.sleep(1.5 * (attempt + 1))
             if not issues:
                 return draft, {"verified": True, "attempts": attempt + 1,
                                "rejections": rejections, "source": self.llm.name}
