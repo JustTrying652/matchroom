@@ -19,13 +19,18 @@ short, friendly sentences for a casual fan; depth "analyst" means up to three se
 supporting numbers and why it matters. If "feedback" is present, your previous draft was rejected: \
 fix every problem listed. Reply with JSON only: {"text": string, "claims": [{"field": string, \
 "value": string|number}]}, where each claim restates a fact you used with the exact field name and \
-value from the payload."""
+value from the payload. Claim fields must be field names that appear in moment.facts or analysis \
+(for a goal the scorer's field is "scorer", not "player"); never claim "type" or "id". Describe time \
+windows exactly as given: fields ending in _5min refer to "the last five minutes", never to the \
+opening minutes. Only say "stoppage time" or "injury time" if the clock contains "+"."""
 
 RECAP_SYSTEM = """You are the Recap Writer for a football broadcast desk. Write a short full-time \
 recap (3-4 sentences) using ONLY the facts in the payload, in the requested language. Never invent \
 players, scores or numbers. If "feedback" is present, fix every problem listed. Reply with JSON \
 only: {"text": string, "claims": [{"field": string, "value": string|number}]} with claims for \
-score, home and away."""
+score, home and away. When comparing the teams, use the "more_shots" and "higher_xg" facts exactly as \
+given and do not work out comparisons yourself. Only say "stoppage time" or "injury time" if a \
+clock in the facts contains "+"."""
 
 NUM = re.compile(r"\d+(?:\.\d+)?")
 
@@ -150,6 +155,9 @@ class Verifier:
         for tok in NUM.findall(text):
             if not any(_num_eq(tok, a) for a in allowed):
                 issues.append(f"number {tok} in the text is not supported by the facts")
+        if re.search(r"stoppage|injury time|added time", text, re.I) \
+                and not any("+" in str(x) for x in _walk(facts)):
+            issues.append("mentions stoppage time, but no clock in the facts is in stoppage time")
         known = [leaf for leaf in _walk(facts) if isinstance(leaf, str)]
         for name in self.roster:
             if name in text and not any(name in k for k in known):
