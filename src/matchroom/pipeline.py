@@ -124,21 +124,23 @@ class MatchDesk:
             cache["__recap__"] = result
         return result
 
-
-
-
-    def recap(self, persona: Persona) -> dict:
+    def _recap(self, persona: Persona) -> dict:
         s = self.detector.state.snapshot()
         h, a = self.home, self.away
         hg, ag = s["score"][h], s["score"][a]
         scorers = [f"{m.facts['scorer']} ({m.facts['team']}) {m.facts['clock']}"
                    for m in self.detector.moments if m.type == "goal"]
+        more_shots = self.names[h] if s["teams"][h]["shots"] > s["teams"][a]["shots"] else \
+            self.names[a] if s["teams"][a]["shots"] > s["teams"][h]["shots"] else "neither side"
+        higher_xg = self.names[h] if s["teams"][h]["xg"] > s["teams"][a]["xg"] else \
+            self.names[a] if s["teams"][a]["xg"] > s["teams"][h]["xg"] else "neither side"
         facts = {"score": f"{hg}-{ag}", "score_line": f"{self.names[h]} {hg}-{ag} {self.names[a]}",
                  "home": self.names[h], "away": self.names[a],
                  "winner": self.names[h] if hg > ag else self.names[a] if ag > hg else "draw",
                  "home_shots": s["teams"][h]["shots"], "away_shots": s["teams"][a]["shots"],
                  "home_xg": s["teams"][h]["xg"], "away_xg": s["teams"][a]["xg"],
-                 "home_possession_pct": s["teams"][h]["possession_pct"], "scorers": scorers}
+                 "home_possession_pct": s["teams"][h]["possession_pct"], "scorers": scorers,
+                 "more_shots": more_shots, "higher_xg": higher_xg}
         safe = RecapWriter(self._safe)
         draft, verification = self._loop(
             lambda at, fb: self.recapper.write(facts, persona, at, fb),
