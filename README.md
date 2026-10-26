@@ -1,4 +1,14 @@
-# Matchroom
+---
+title: Matchroom
+emoji: ⚽
+colorFrom: blue
+colorTo: red
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
+
 
 AI match desk for the **Inside the Game: Developer Hackathon** (Microsoft x Premier League).
 Turns a live stream of synthetic football events into explainable match intelligence,
