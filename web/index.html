@@ -105,10 +105,9 @@ const PERSONA_LABEL = {casual_en:"Casual fan (English)", analyst_en:"Analyst (En
 const STAT_ROWS = [["Shots (on target)", t => `${t.shots} (${t.shots_on_target})`], ["Expected goals (xG)", t => t.xg], ["Possession", t => t.possession_pct + "%"],
   ["Pass accuracy", t => t.pass_accuracy_pct + "%"], ["Final-third entries", t => t.final_third_entries], ["Pressures", t => t.pressures], ["Tackles won", t => t.tackles_won]];
 let es = null, teams = [], colors = {}, cardById = {}, overlayTimer = null, pathTimer = null;
-let STATIC = NULL, runId = 0;
+let STATIC = null, runId = 0;   // STATIC is set in hosted mode: pre-generated feeds are replayed in the browser
 
 function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
-
 
 async function init() {
   let m;
@@ -151,9 +150,6 @@ function start() {
   es.onmessage = (ev) => handle(JSON.parse(ev.data));
   es.onerror = () => { es.close(); finish(); };
 }
-
-
-
 function finish() { $("go").disabled = false; $("go").textContent = "Replay"; }
 
 function handle(msg) {

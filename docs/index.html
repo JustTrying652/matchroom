@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matchroom - AI match desk</title>
+<style>
+  :root { --bg:#0b1220; --panel:#121a2b; --line:#1f2b44; --text:#e6ecf5; --muted:#8fa0b8; --accent:#4cc9f0; --ok:#3ddc97; --warn:#ffb703; --bad:#ff5d5d; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 system-ui, "Segoe UI", Roboto, sans-serif; }
+  header { display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel); }
+  .brand { font-size:20px; font-weight:700; letter-spacing:.3px; }
+  .brand span { display:block; font-size:12px; font-weight:400; color:var(--muted); }
+  .controls { display:flex; flex-wrap:wrap; gap:10px 14px; align-items:end; }
+  .controls label { display:flex; flex-direction:column; font-size:11px; color:var(--muted); gap:3px; }
+  .controls label.chk { flex-direction:row; align-items:center; gap:6px; padding-bottom:7px; }
+  select, button { background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
+  button { cursor:pointer; background:var(--accent); color:#04202b; border:0; font-weight:700; padding:8px 16px; }
+  button:disabled { opacity:.5; cursor:default; }
+  main { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:16px; padding:16px 20px; }
+  @media (max-width: 900px) { main { grid-template-columns:1fr; } }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .scorebug { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px; text-align:center; }
+  .team { font-weight:700; font-size:17px; } .team small { display:block; color:var(--muted); font-weight:400; font-size:12px; }
+  .score { font-size:34px; font-weight:800; letter-spacing:2px; } .clock { display:block; font-size:13px; color:var(--accent); font-weight:600; letter-spacing:0; }
+  .pitchwrap { position:relative; margin-top:12px; border-radius:8px; overflow:hidden; }
+  #pitch { display:block; width:100%; height:auto; background:#0f3d2a; }
+  .overlay { position:absolute; left:3%; right:3%; bottom:4%; padding:8px 12px; border-left:5px solid var(--accent); background:rgba(8,14,26,.92); border-radius:6px; font-size:13px; }
+  .overlay b { display:block; font-size:11px; letter-spacing:1px; color:var(--accent); }
+  .hidden { display:none !important; }
+  #ticker { margin-top:8px; color:var(--muted); font-size:12px; min-height:18px; }
+  .meters { display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center; margin:12px 0 4px; }
+  .bar { position:relative; height:12px; border-radius:6px; background:linear-gradient(90deg, var(--h,#1f77b4), #2a3550 50%, var(--a,#e4572e)); }
+  .bar i { position:absolute; top:-4px; width:6px; height:20px; border-radius:3px; background:#fff; transform:translateX(-50%); left:50%; transition:left .6s; }
+  .chip { font-size:12px; padding:3px 10px; border-radius:20px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+  table { width:100%; border-collapse:collapse; margin-top:10px; font-size:13px; }
+  td { padding:5px 4px; border-top:1px solid var(--line); } td:nth-child(1), td:nth-child(3) { width:30%; font-weight:600; } td:nth-child(2) { text-align:center; color:var(--muted); } td:nth-child(3) { text-align:right; }
+  h2 { margin:0 0 10px; font-size:15px; letter-spacing:.4px; }
+  #feed { display:flex; flex-direction:column; gap:10px; max-height:calc(100vh - 150px); overflow:auto; padding-right:4px; }
+  .card { background:var(--bg); border:1px solid var(--line); border-left:5px solid var(--accent); border-radius:8px; padding:10px 12px; animation:pop .35s ease; }
+  @keyframes pop { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+  .meta { display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:12px; color:var(--muted); }
+  .meta .c { color:var(--accent); font-weight:700; } .meta .t { font-weight:700; letter-spacing:.8px; color:var(--text); }
+  .ver { border-radius:12px; padding:1px 8px; border:1px solid var(--ok); color:var(--ok); } .ver.rec { border-color:var(--warn); color:var(--warn); } .ver.bad { border-color:var(--bad); color:var(--bad); }
+  .card p { margin:6px 0 8px; } .why { background:none; color:var(--accent); border:1px solid var(--line); padding:3px 10px; font-weight:600; font-size:12px; }
+  .recap { border:1px solid var(--accent); background:var(--bg); border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+  .recap b { color:var(--accent); font-size:11px; letter-spacing:1px; }
+  #drawer { position:fixed; top:0; right:0; bottom:0; width:min(520px,100%); background:var(--panel); border-left:1px solid var(--line); padding:16px; overflow:auto; box-shadow:-12px 0 30px rgba(0,0,0,.45); z-index:10; }
+  #drawer h3 { margin:14px 0 6px; font-size:12px; letter-spacing:1px; color:var(--accent); text-transform:uppercase; }
+  #drawer .x { float:right; background:none; color:var(--text); border:1px solid var(--line); }
+  #drawer ul { margin:0; padding-left:18px; font-size:13px; } #drawer pre { background:var(--bg); padding:8px; border-radius:6px; font-size:11px; overflow:auto; }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; font-size:13px; } .kv span:nth-child(odd) { color:var(--muted); }
+  .rej { border-left:3px solid var(--bad); padding:4px 8px; margin:6px 0; font-size:13px; background:var(--bg); } .okline { border-left:3px solid var(--ok); padding:4px 8px; font-size:13px; background:var(--bg); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Matchroom<span>AI match desk | synthetic data, all clubs and players are fictional</span></div>
+  <div class="controls">
+    <label>Fan view <select id="persona"></select></label>
+    <label>Favourite club <select id="fav"><option value="">None</option></select></label>
+    <label>Player focus <select id="player"><option value="">Whole match</option></select></label>
+    <label>Speed <select id="speed"><option value="20">20x</option><option value="60" selected>60x</option><option value="200">200x</option><option value="1000">Fast</option></select></label>
+    <label class="chk"><input type="checkbox" id="faults"> Demo: make the model slip</label>
+    <button id="go">Kick off</button>
+  </div>
+</header>
+<main>
+  <section class="panel">
+    <div class="scorebug">
+      <div class="team" id="homeName"></div>
+      <div><span class="score" id="score">0 - 0</span><span class="clock" id="clock">0'</span></div>
+      <div class="team" id="awayName"></div>
+    </div>
+    <div class="pitchwrap">
+      <svg id="pitch" viewBox="0 0 105 68">
+        <g fill="none" stroke="rgba(255,255,255,.55)" stroke-width=".4">
+          <rect x=".3" y=".3" width="104.4" height="67.4"/><line x1="52.5" y1=".3" x2="52.5" y2="67.7"/>
+          <circle cx="52.5" cy="34" r="9.15"/>
+          <rect x=".3" y="13.8" width="16.5" height="40.3"/><rect x="88.2" y="13.8" width="16.5" height="40.3"/>
+          <rect x=".3" y="24.8" width="5.5" height="18.3"/><rect x="99.2" y="24.8" width="5.5" height="18.3"/>
+        </g>
+        <line id="path" x1="0" y1="0" x2="0" y2="0" stroke="#fff" stroke-width=".5" stroke-dasharray="1.2 1" opacity="0"/>
+        <circle id="ball" cx="52.5" cy="34" r="1.4" fill="#fff" stroke="#000" stroke-width=".25"/>
+      </svg>
+      <div id="overlay" class="overlay hidden"></div>
+    </div>
+    <div id="ticker">Press Kick off to replay the match.</div>
+    <div class="meters">
+      <div><div class="bar" id="bar"><i id="marker"></i></div></div>
+      <span class="chip" id="chaos">momentum and rhythm</span>
+    </div>
+    <table id="stats"></table>
+  </section>
+  <section class="panel">
+    <h2>LIVE MATCH INTELLIGENCE</h2>
+    <div id="recap" class="recap hidden"></div>
+    <div id="feed"></div>
+  </section>
+</main>
+<aside id="drawer" class="hidden"></aside>
+<script>
+const $ = (id) => document.getElementById(id);
+const PERSONA_LABEL = {casual_en:"Casual fan (English)", analyst_en:"Analyst (English)", casual_sw:"Casual fan (Kiswahili)", analyst_sw:"Analyst (Kiswahili)"};
+const STAT_ROWS = [["Shots (on target)", t => `${t.shots} (${t.shots_on_target})`], ["Expected goals (xG)", t => t.xg], ["Possession", t => t.possession_pct + "%"],
+  ["Pass accuracy", t => t.pass_accuracy_pct + "%"], ["Final-third entries", t => t.final_third_entries], ["Pressures", t => t.pressures], ["Tackles won", t => t.tackles_won]];
+let es = null, teams = [], colors = {}, cardById = {}, overlayTimer = null, pathTimer = null;
+let STATIC = NULL, runId = 0;
+
+function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+
+
+async function init() {
+  let m;
+  try {
+    const r = await fetch("/api/match");
+    if (!r.ok || !(r.headers.get("content-type") || "").includes("json")) throw new Error("no live backend");
+    m = await r.json();
+  } catch (err) {
+    STATIC = await (await fetch("data/static.json")).json();
+    m = STATIC;
+    $("ticker").textContent = "Hosted demo: replaying feeds pre-generated by the real pipeline. Press Kick off.";
+  }
+  teams = m.teams; teams.forEach(t => colors[t.code] = t.color);
+  $("homeName").textContent = teams[0].name; $("awayName").textContent = teams[1].name;
+  $("homeName").style.color = teams[0].color; $("awayName").style.color = teams[1].color;
+  $("bar").style.setProperty("--h", teams[0].color); $("bar").style.setProperty("--a", teams[1].color);
+  m.personas.forEach(p => $("persona").append(new Option(PERSONA_LABEL[p] || p, p)));
+  teams.forEach(t => {
+    $("fav").append(new Option(t.name, t.code));
+    const g = document.createElement("optgroup"); g.label = t.name;
+    t.players.filter(p => p.position !== "GK").forEach(p => g.append(new Option(`${p.name} (#${p.number})`, p.name)));
+    $("player").append(g);
+  });
+  $("go").onclick = start;
+  renderStats(null);
+}
+
+function reset() {
+  $("feed").replaceChildren(); $("recap").classList.add("hidden"); $("overlay").classList.add("hidden");
+  $("score").textContent = "0 - 0"; $("clock").textContent = "0'"; $("drawer").classList.add("hidden"); cardById = {};
+  renderStats(null); $("marker").style.left = "50%"; $("chaos").textContent = "momentum and rhythm";
+}
+
+function start() {
+  if (STATIC) return startStatic();
+  if (es) es.close();
+  reset(); $("go").disabled = true; $("go").textContent = "Playing...";
+  const q = new URLSearchParams({persona: $("persona").value, fav: $("fav").value, player: $("player").value, speed: $("speed").value, faults: $("faults").checked});
+  es = new EventSource("/api/stream?" + q);
+  es.onmessage = (ev) => handle(JSON.parse(ev.data));
+  es.onerror = () => { es.close(); finish(); };
+}
+
+
+
+function finish() { $("go").disabled = false; $("go").textContent = "Replay"; }
+
+function handle(msg) {
+  if (msg.kind === "event") { moveBall(msg.e); if (msg.snap) updateSnap(msg.snap); }
+  else if (msg.kind === "card") { addCard(msg.card); showOverlay(msg.card.overlay); }
+  else if (msg.kind === "recap") showRecap(msg.recap);
+  else if (msg.kind === "end") { es.close(); finish(); }
+}
+
+function moveBall(e) {
+  const ball = $("ball"); ball.setAttribute("cx", e.x); ball.setAttribute("cy", e.y);
+  ball.setAttribute("fill", colors[e.team] || "#fff");
+  if (e.end_x !== null && e.end_x !== undefined) {
+    const p = $("path"); p.setAttribute("x1", e.x); p.setAttribute("y1", e.y); p.setAttribute("x2", e.end_x); p.setAttribute("y2", e.end_y);
+    p.setAttribute("stroke", colors[e.team] || "#fff"); p.setAttribute("opacity", "1");
+    clearTimeout(pathTimer); pathTimer = setTimeout(() => p.setAttribute("opacity", "0"), 700);
+  }
+  $("clock").textContent = e.clock;
+  const who = e.player ? ` ${e.player}` : "";
+  $("ticker").textContent = `${e.clock}  ${e.team}${who}: ${e.type.replace("_", " ")}${e.outcome ? " (" + e.outcome.replace("_", " ") + ")" : ""}`;
+}
+
+function updateSnap(s) {
+  const [h, a] = teams.map(t => t.code);
+  $("score").textContent = `${s.score[h]} - ${s.score[a]}`;
+  $("marker").style.left = ((1 - s.momentum.index) / 2 * 100) + "%";
+  $("chaos").textContent = `${s.control_vs_chaos.label} | ${s.control_vs_chaos.rhythm}`;
+  renderStats(s);
+}
+
+function renderStats(s) {
+  const [h, a] = teams.map(t => t.code);
+  const tb = $("stats"); tb.replaceChildren();
+  STAT_ROWS.forEach(([label, fn]) => {
+    const tr = el("tr"); tr.append(el("td", "", s ? fn(s.teams[h]) : "-"), el("td", "", label), el("td", "", s ? fn(s.teams[a]) : "-")); tb.append(tr);
+  });
+}
+
+function addCard(c) {
+  cardById[c.moment_id] = c;
+  const v = c.verification, art = el("article", "card");
+  art.style.borderLeftColor = c.overlay.accent;
+  const meta = el("div", "meta");
+  const status = !v.verified ? ["ver bad", "not verified"] : v.attempts > 1 ? ["ver rec", `verified after ${v.attempts} attempts`] : ["ver", "verified"];
+  meta.append(el("span", "c", c.clock), el("span", "t", c.overlay.title), el("span", status[0], status[1]));
+  const btn = el("button", "why", "Why? Show the evidence"); btn.onclick = () => openDrawer(c);
+  art.append(meta, el("p", "", c.text), btn);
+  $("feed").prepend(art);
+}
+
+function showOverlay(o) {
+  const n = $("overlay"); n.replaceChildren(el("b", "", o.title), el("span", "", o.body));
+  n.style.borderLeftColor = o.accent; n.classList.remove("hidden");
+  clearTimeout(overlayTimer); overlayTimer = setTimeout(() => n.classList.add("hidden"), 6500);
+}
+
+function showRecap(r) {
+  const n = $("recap"); n.replaceChildren(el("b", "", "FULL-TIME RECAP"), el("p", "", r.text)); n.classList.remove("hidden");
+}
+
+function kv(obj) {
+  const d = el("div", "kv");
+  Object.entries(obj).forEach(([k, v]) => { d.append(el("span", "", k), el("span", "", Array.isArray(v) ? v.join("; ") : String(v))); });
+  return d;
+}
+
+async function openDrawer(c) {
+  const d = $("drawer"); d.replaceChildren(); d.classList.remove("hidden");
+  const close = el("button", "x", "Close"); close.onclick = () => d.classList.add("hidden");
+  d.append(close, el("h2", "", `${c.clock} | ${c.overlay.title}`), el("p", "", c.text));
+  d.append(el("h3", "", "Evidence: the raw events behind this moment"));
+  const ul = el("ul"); d.append(ul);
+  const evs = STATIC ? c.evidence.map(i => STATIC.evidence[i]).filter(Boolean)
+    : (await (await fetch("/api/evidence?ids=" + c.evidence.join(","))).json()).events;
+  evs.forEach(e => ul.append(el("li", "", `${e.clock} ${e.type}${e.player ? " by " + e.player : ""}${e.outcome ? " (" + e.outcome + ")" : ""} [${e.id}]`)));
+  d.append(el("h3", "", "Facts the writer was given"), kv(c.facts));
+  d.append(el("h3", "", "Analyst: why it matters"), kv(c.analysis));
+  d.append(el("h3", "", "Verifier log"));
+  c.verification.rejections.forEach(r => {
+    const b = el("div", "rej"); b.append(el("div", "", `Attempt ${r.attempt} rejected: "${r.text}"`), el("div", "", "Problems: " + r.issues.join("; "))); d.append(b);
+  });
+  d.append(el("div", "okline", c.verification.verified ? `Accepted on attempt ${c.verification.attempts} (source: ${c.verification.source})` : "Could not be verified"));
+  d.append(el("h3", "", "Overlay (machine-readable, ready for a broadcast graphics engine)"), el("pre", "", JSON.stringify(c.overlay, null, 2)));
+}
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+function pickCards() {
+  const persona = $("persona").value, fav = $("fav").value, player = $("player").value;
+  const feed = (($("faults").checked && STATIC.feeds[persona + "_faults"]) || STATIC.feeds[persona]);
+  const deep = STATIC.feeds["analyst_" + (persona.endsWith("_sw") ? "sw" : "en")];
+  let cards = feed.cards;
+  if (deep && player) {          // player focus: that player's moments, plus goals and results
+    cards = deep.cards.filter(c => (c.facts.scorer || c.facts.player) === player || ["goal", "half_time", "full_time"].includes(c.type));
+  } else if (deep && fav && persona.startsWith("casual")) {   // favourite club: a few extra moments for that club
+    const have = new Set(cards.map(c => c.moment_id));
+    cards = cards.concat(deep.cards.filter(c => c.team === fav && c.importance >= 0.4 && !have.has(c.moment_id)));
+  }
+  return {cards: cards.slice().sort((a, b) => a.t - b.t), recap: feed.recap};
+}
+
+async function startStatic() {
+  const id = ++runId;
+  reset(); $("go").disabled = true; $("go").textContent = "Playing...";
+  const {cards, recap} = pickCards();
+  const speed = Number($("speed").value);
+  let ci = 0, prevT = 0;
+  for (let i = 0; i < STATIC.events.length; i++) {
+    if (id !== runId) return;
+    const e = STATIC.events[i];
+    moveBall(e);
+    if (STATIC.snaps[String(i)]) updateSnap(STATIC.snaps[String(i)]);
+    while (ci < cards.length && cards[ci].t <= e.t) { addCard(cards[ci]); showOverlay(cards[ci].overlay); ci++; }
+    await sleep(Math.min(600, Math.max(0, (e.t - prevT) / speed * 1000)));
+    prevT = e.t;
+  }
+  showRecap(recap); finish();
+}
+
+init();
+</script>
+</body>
+</html>
